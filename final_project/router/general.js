@@ -82,7 +82,34 @@ public_users.post("/register", (req, res) => {
  */
 public_users.get('/', function (req, res) {
     // Return complete book catalog with pretty formatting
-    res.send(JSON.stringify(books, null, 4));
+    //res.send(JSON.stringify(books, null, 4));
+    // 1. Function that returns a Promise
+    const getBooks = () => {
+        return new Promise((resolve, reject) => {
+            // Simulating a delay of 1 second (e.g., database fetch)
+            setTimeout(() => {
+                if (books) {
+                    resolve(books); // Success: fulfill with data
+                } else {
+                    reject("Books not found"); // Error: reject
+                }
+            }, 1000);
+        });
+    };
+
+    // Call the function and use .then() to get the results
+    console.log("Fetching books...");
+
+    getBooks()
+        .then((booksList) => {
+            console.log("Books received:");
+            res.send(JSON.stringify(booksList, null, 4));
+            //console.log(booksList);
+        })
+        .catch((error) => {
+            //console.error(error);
+            res.send("Books not found");
+        });
 });
 
 /**
@@ -193,7 +220,10 @@ public_users.get('/review/:isbn', function (req, res) {
     // Get the book by ISBN and return its reviews
     const book = books[req.params.isbn];
     if (book) {
-        res.send(book.reviews);
+        if (Object.keys(book.reviews).length === 0) {
+            res.send("No reviews found for this book");
+            return;
+        }
     } else {
         res.send("Book not found");
     }
