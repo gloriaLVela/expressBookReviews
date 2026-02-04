@@ -1,11 +1,43 @@
+/**
+ * Authenticated Users Router Module
+ * 
+ * Handles user authentication, session management, and review operations
+ * for registered users. Provides endpoints for user login and book reviews
+ * management (add/update and delete).
+ * 
+ * All review endpoints require JWT authentication via middleware.
+ */
+
+// ============================================================================
+// DEPENDENCIES
+// ============================================================================
+
 const express = require('express');
 const jwt = require('jsonwebtoken');
 let books = require("./booksdb.js");
+
+// ============================================================================
+// ROUTER AND DATA STORAGE
+// ============================================================================
+
+/** Express router for authenticated user routes */
 const regd_users = express.Router();
 
+/** In-memory user storage for registered users */
 let users = [];
 
-const isValid = (username) => { //returns boolean
+// ============================================================================
+// VALIDATION FUNCTIONS
+// ============================================================================
+
+/**
+ * Validates if a username already exists in the system.
+ * Used during registration to prevent duplicate usernames.
+ * 
+ * @param {string} username - The username to check for existence
+ * @returns {boolean} - True if username exists, false otherwise
+ */
+const isValid = (username) => {
     // Filter the users array for any user with the same username
     let userswithsamename = users.filter((user) => {
         return user.username === username;
@@ -22,7 +54,7 @@ const isValid = (username) => { //returns boolean
  * @param {string} password - The password to validate
  * @returns {boolean} - True if credentials are valid, false otherwise
  */
-const authenticatedUser = (username, password) => { //returns boolean
+const authenticatedUser = (username, password) => {
     // Filter the users array for any user with the same username and password
     let validusers = users.filter((user) => {
         return (user.username === username && user.password === password);
@@ -35,7 +67,27 @@ const authenticatedUser = (username, password) => { //returns boolean
     }
 }
 
-//only registered users can login
+// ============================================================================
+// AUTHENTICATION ROUTES
+// ============================================================================
+
+/**
+ * User login endpoint
+ * Validates user credentials and issues a JWT access token
+ * Token is stored in session for subsequent authenticated requests
+ * 
+ * @route POST /login
+ * @param {string} username - Username (required, from request body)
+ * @param {string} password - Password (required, from request body)
+ * @returns {Object} 200 - Login successful with access token
+ * @returns {Object} 400 - Missing username or password
+ * @returns {Object} 401 - Invalid credentials (username/password mismatch)
+ * 
+ * @example
+ * POST /login
+ * Body: { "username": "john", "password": "pass123" }
+ * Response: { "message": "User successfully logged in", "accessToken": "eyJhb..." }
+ */
 regd_users.post("/login", (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
@@ -62,19 +114,43 @@ regd_users.post("/login", (req, res) => {
     }
 });
 
-// Add a book review
+// ============================================================================
+// REVIEW MANAGEMENT ROUTES
+// ============================================================================
+
+/**
+ * Add or update a book review
+ * Allows authenticated users to add new reviews or update existing ones.
+ * If a review already exists for the user, it will be replaced.
+ * 
+ * @route PUT /auth/review/:isbn
+ * @authenticated Required - User must be logged in
+ * @param {string} isbn - Book ISBN from URL parameter (required)
+ * @param {string} review - Review text from request body (required)
+ * @returns {Object} 200 - Review added/updated successfully
+ * @returns {Object} 400 - Missing ISBN parameter
+ * @returns {Object} 404 - Book not found
+ * 
+ * @example
+ * PUT /auth/review/978-0-13-110362-7
+ * Headers: Authorization required (JWT token)
+ * Body: { "review": "Great book! Highly recommended." }
+ * Response: { "message": "Review added" }
+ */
 regd_users.put("/auth/review/:isbn", (req, res) => {
     const isbn = req.params.isbn;  // Get ISBN from URL parameters
 
     if (!isbn) {
         return res.status(400).json({ message: "ISBN is required" });
     }
-    // Get the book by id
+
+    // Get the book by ISBN from the books database
     const book = books[isbn];
     const username = req.session.authorization.username;
     const review = req.body.review;
+
     if (book) {
-        // Add or update the review for the user
+        // Add or update the review for the authenticated user
         book.reviews[username] = review;
         res.send("Review added");
     } else {
@@ -82,6 +158,23 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
     }
 });
 
+/**
+ * Delete a user's book review
+ * Allows authenticated users to delete their own reviews for a specific book.
+ * 
+ * @route DELETE /auth/review/:isbn
+ * @authenticated Required - User must be logged in
+ * @param {string} isbn - Book ISBN from URL parameter (required)
+ * @returns {Object} 200 - Review deleted successfully
+ * @returns {Object} 400 - Missing ISBN parameter
+ * @returns {Object} 401 - User not logged in
+ * @returns {Object} 404 - Book not found or review not found for user
+ * 
+ * @example
+ * DELETE /auth/review/978-0-13-110362-7
+ * Headers: Authorization required (JWT token)
+ * Response: { "message": "Review deleted successfully" }
+ */
 regd_users.delete("/auth/review/:isbn", (req, res) => {
     const isbn = req.params.isbn;  // Get ISBN from URL parameters
 
@@ -89,7 +182,7 @@ regd_users.delete("/auth/review/:isbn", (req, res) => {
         return res.status(400).json({ message: "ISBN is required" });
     }
 
-    // Get the book by ISBN
+    // Get the book by ISBN from the books database
     const book = books[isbn];
 
     if (!book) {
@@ -110,7 +203,15 @@ regd_users.delete("/auth/review/:isbn", (req, res) => {
     }
 });
 
+// ============================================================================
+// MODULE EXPORTS
+// ============================================================================
 
+/** Export authenticated user routes router */
 module.exports.authenticated = regd_users;
+
+/** Export username validation function */
 module.exports.isValid = isValid;
+
+/** Export users array for access by other modules */
 module.exports.users = users;
