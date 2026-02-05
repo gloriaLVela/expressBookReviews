@@ -236,23 +236,39 @@ public_users.get('/author/:author', async function (req, res) {
  * GET /title/Pride%20and%20Prejudice
  * Response: [{ "author": "Jane Austen", "title": "Pride and Prejudice", "reviews": {...} }]
  */
-public_users.get('/title/:title', function (req, res) {
-    // Find all books with the specified title
-    selectedBooks = [];
+public_users.get('/title/:title', async function (req, res) {
+    try {
+        const title = req.params.title;
+        selectedBooks = [];
+        // Simulate fetching book details asynchronously using Axios
+        // In a real application, this would make an HTTP request to a book API
+        const getBookByTitle = async (title) => {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    let book; 
+                    for (const key in books) {
+                        if (books.hasOwnProperty(key)) {
+                            book = books[key];
+                            if (book.title === req.params.title) {
+                                selectedBooks.push(book);
+                            }
+                        }
+                    }
+                
+                    if (selectedBooks.length > 0 ) {
+                        resolve(selectedBooks);
+                    } else {
+                        reject("Book not found");
+                    }
+                }, 500); // Simulate async operation
+            });
+        };
 
-    for (const key in books) {
-        if (books.hasOwnProperty(key)) {
-            let book = books[key];
-            if (book.title === req.params.title) {
-                selectedBooks.push(book);
-            }
-        }
-    }
-
-    if (selectedBooks.length > 0) {
-        res.send(JSON.stringify(selectedBooks, null, 4));
-    } else {
-        res.send("Book not found");
+        // Using async-await to handle the Promise
+        const bookList = await getBookByTitle(title);
+        res.status(200).send(JSON.stringify(bookList, null, 4));
+    } catch (error) {
+        res.status(404).send(error);
     }
 });
 
