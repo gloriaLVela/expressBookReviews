@@ -16,6 +16,7 @@
 // ============================================================================
 
 const express = require('express');
+const axios = require('axios');
 let books = require("./booksdb.js");
 let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
@@ -125,12 +126,30 @@ public_users.get('/', function (req, res) {
  * GET /isbn/1
  * Response: { "author": "Chinua Achebe", "title": "Things Fall Apart", "reviews": {...} }
  */
-public_users.get('/isbn/:isbn', function (req, res) {
-    const book = books[req.params.isbn];
-    if (book) {
-        res.send(JSON.stringify(book, null, 4));
-    } else {
-        res.send("Book not found");
+public_users.get('/isbn/:isbn', async function (req, res) {
+    try {
+        const isbn = req.params.isbn;
+
+        // Simulate fetching book details asynchronously using Axios
+        // In a real application, this would make an HTTP request to a book API
+        const getBookByISBN = async (isbn) => {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    const book = books[isbn];
+                    if (book) {
+                        resolve(book);
+                    } else {
+                        reject("Book not found");
+                    }
+                }, 500); // Simulate async operation
+            });
+        };
+
+        // Using async-await to handle the Promise
+        const book = await getBookByISBN(isbn);
+        res.status(200).send(JSON.stringify(book, null, 4));
+    } catch (error) {
+        res.status(404).send(error);
     }
 });
 
