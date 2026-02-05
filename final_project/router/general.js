@@ -167,8 +167,9 @@ public_users.get('/isbn/:isbn', async function (req, res) {
  * GET /author/Jane%20Austen
  * Response: [{ "author": "Jane Austen", "title": "Pride and Prejudice", "reviews": {...} }]
  */
-public_users.get('/author/:author', function (req, res) {
+public_users.get('/author/:author', async function (req, res) {
     // Find all books by the specified author
+    /*
     selectedBooks = [];
 
     for (const key in books) {
@@ -184,6 +185,40 @@ public_users.get('/author/:author', function (req, res) {
         res.send(JSON.stringify(selectedBooks, null, 4));
     } else {
         res.send("Book not found");
+    }*/
+    
+    try {
+        const author = req.params.author;
+        selectedBooks = [];
+        // Simulate fetching book details asynchronously using Axios
+        // In a real application, this would make an HTTP request to a book API
+        const getBookByAuthor = async (author) => {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    let book; 
+                    for (const key in books) {
+                        if (books.hasOwnProperty(key)) {
+                            book = books[key];
+                            if (book.author === req.params.author) {
+                                selectedBooks.push(book);
+                            }
+                        }
+                    }
+                
+                    if (selectedBooks.length > 0 ) {
+                        resolve(selectedBooks);
+                    } else {
+                        reject("Book not found");
+                    }
+                }, 500); // Simulate async operation
+            });
+        };
+
+        // Using async-await to handle the Promise
+        const bookList = await getBookByAuthor(author);
+        res.status(200).send(JSON.stringify(bookList, null, 4));
+    } catch (error) {
+        res.status(404).send(error);
     }
 });
 
