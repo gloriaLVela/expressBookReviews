@@ -152,7 +152,11 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
     if (book) {
         // Add or update the review for the authenticated user
         book.reviews[username] = review;
-        res.send("Review added " + review + " for the book with ISBN " + isbn + " by the user " + username);
+        return res.status(200).json({
+            isbn: isbn,
+            review: review,
+            username: username
+        });
     } else {
         res.send("There are no reviews for the book with ISBN " + isbn);
     }

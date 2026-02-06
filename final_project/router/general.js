@@ -49,17 +49,23 @@ const public_users = express.Router();
  * Response: { "message": "User successfully registered. Now you can login" }
  */
 public_users.post("/register", (req, res) => {
+    // Extract username and password from request body
     const username = req.body.username;
     const password = req.body.password;
 
+    // Check if both username and password are provided
     if (username && password) {
+        // Verify the username is not already registered
         if (!isValid(username)) {
+            // Add new user to the users array
             users.push({ username: username, password: password });
             return res.status(200).json({ message: "User successfully registered user " + username + ". Now you can login" });
         } else {
+            // Return error if username already exists in the system
             return res.status(400).json({ message: "User already exists!" });
         }
     }
+    // Return error if username or password is missing
     return res.status(400).json({ message: "Unable to register user." });
 });
 
@@ -80,15 +86,18 @@ public_users.post("/register", (req, res) => {
  */
 public_users.get('/', async function (req, res) {
     try {
-        // Simulate fetching books asynchronously
+        // Simulate fetching books asynchronously with a 1 second delay
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
+        // Return all books if available
         if (books) {
+            // Format response with proper JSON indentation for readability
             res.send(JSON.stringify(books, null, 4));
         } else {
             res.status(404).send("Books not found");
         }
     } catch (error) {
+        // Handle any errors during fetch operation
         res.status(404).send("Books not found");
     }
 });
@@ -108,18 +117,22 @@ public_users.get('/', async function (req, res) {
  */
 public_users.get('/isbn/:isbn', async function (req, res) {
     try {
+        // Extract ISBN from URL parameters
         const isbn = req.params.isbn;
 
-        // Simulate fetching book details asynchronously
+        // Simulate fetching book details asynchronously with a 500ms delay
         await new Promise((resolve) => setTimeout(resolve, 500));
 
+        // Look up the book in the books database using ISBN as key
         const book = books[isbn];
         if (book) {
+            // Return the book details with formatted JSON
             res.status(200).send(JSON.stringify(book, null, 4));
         } else {
             res.status(404).send("Book not found");
         }
     } catch (error) {
+        // Handle any errors during book lookup
         res.status(404).send(error);
     }
 });
@@ -140,20 +153,24 @@ public_users.get('/isbn/:isbn', async function (req, res) {
  */
 public_users.get('/author/:author', async function (req, res) {
     try {
+        // Extract author name from URL parameter
         const author = req.params.author;
 
-        // Simulate fetching book details asynchronously using Axios
+        // Fetch books data asynchronously using Axios HTTP client
         const response = await axios.get('http://localhost:3000/books');
         const booksData = response.data;
 
+        // Filter books by matching the author name exactly
         const bookList = Object.values(booksData).filter(book => book.author === author);
 
+        // Return matching books if found
         if (bookList.length > 0) {
             res.status(200).send(JSON.stringify(bookList, null, 4));
         } else {
             res.status(404).send("Book not found");
         }
     } catch (error) {
+        // Handle any errors during Axios call or filtering
         res.status(404).send(error.message);
     }
 });
@@ -174,19 +191,23 @@ public_users.get('/author/:author', async function (req, res) {
  */
 public_users.get('/title/:title', async function (req, res) {
     try {
+        // Extract book title from URL parameter
         const title = req.params.title;
 
-        // Simulate fetching book details asynchronously
+        // Simulate fetching book details asynchronously with a 500ms delay
         await new Promise((resolve) => setTimeout(resolve, 500));
 
+        // Convert books object to array and filter by exact title match
         const bookList = Object.values(books).filter(book => book.title === title);
 
+        // Return matching books if any found
         if (bookList.length > 0) {
             res.status(200).send(JSON.stringify(bookList, null, 4));
         } else {
             res.status(404).send("Book not found");
         }
     } catch (error) {
+        // Handle any errors during title search
         res.status(404).send(error);
     }
 });
@@ -206,14 +227,19 @@ public_users.get('/title/:title', async function (req, res) {
  * Response: { "john": "Great book!", "jane": "Highly recommended" }
  */
 public_users.get('/review/:isbn', function (req, res) {
+    // Look up the book by ISBN from URL parameters
     const book = books[req.params.isbn];
     if (book) {
+        // Transform reviews object into an array of review objects
+        // This converts { username: review } to [{ username, review }]
         const reviewsArray = Object.entries(book.reviews).map(([username, review]) => ({
             username,
             review
         }));
+        // Return formatted reviews array wrapped in a reviews property
         res.send(JSON.stringify({ reviews: reviewsArray }, null, 4));
     } else {
+        // Return 404 if book with given ISBN doesn't exist
         res.status(404).send("Book not found");
     }
 });
