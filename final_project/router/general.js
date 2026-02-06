@@ -16,6 +16,7 @@
 // ============================================================================
 
 const express = require('express');
+const axios = require('axios');
 let books = require("./booksdb.js");
 let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
@@ -141,10 +142,11 @@ public_users.get('/author/:author', async function (req, res) {
     try {
         const author = req.params.author;
 
-        // Simulate fetching book details asynchronously
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        // Simulate fetching book details asynchronously using Axios
+        const response = await axios.get('http://localhost:3000/books');
+        const booksData = response.data;
 
-        const bookList = Object.values(books).filter(book => book.author === author);
+        const bookList = Object.values(booksData).filter(book => book.author === author);
 
         if (bookList.length > 0) {
             res.status(200).send(JSON.stringify(bookList, null, 4));
@@ -152,7 +154,7 @@ public_users.get('/author/:author', async function (req, res) {
             res.status(404).send("Book not found");
         }
     } catch (error) {
-        res.status(404).send(error);
+        res.status(404).send(error.message);
     }
 });
 
